@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  db:
+    image: 'mysql:latest'
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - ./db_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: changeyourrootpassword
+      MYSQL_DATABASE: complete-blog
+      MYSQL_USER: complete-blog
+      MYSQL_PASSWORD: changeyouruserpassword
+
+  blog:
+    image: 'joyqi/typecho:nightly-php7.4-apache'
+    restart: unless-stopped
+    networks:
+      - backend
+      - frontend
+    volumes:
+      - ./blog_data:/app/usr
+    depends_on:
+      - db
+
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    networks:
+      - frontend
+    ports:
+      - '80:80'
+      - '443:443'
+      - '81:81'
+    volumes:
+      - ./proxy_data/data:/data
+      - ./proxy_data/letsencrypt:/etc/letsencrypt
+
+  dash:
+    image: 'antonyleons/ward:latest'
+    restart: unless-stopped
+    networks:
+      - frontend
+    privileged: true
+    environment:
+      WARD_PORT: 4000
+      WARD_THEME: dark
+      WARD_NAME: ward
+    
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
